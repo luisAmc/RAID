@@ -91,6 +91,14 @@ public class Consola extends javax.swing.JFrame {
             borrable.toLowerCase();
             if (borrable.startsWith("clear")) {
                 jp_console.setText("");
+            }else if(borrable.startsWith("rmdir")){
+                jp_console.setText(jp_console.getText()+"\nSe ejecuto rmdir");
+            }else if(borrable.startsWith("rm")){
+                 jp_console.setText(jp_console.getText()+"\nSe ejecuto rm");
+            }else if(borrable.startsWith("ls")){
+                 jp_console.setText(jp_console.getText()+"\nSe ejecuto ls");
+            }else{
+                 jp_console.setText(jp_console.getText()+"\nCOMMAND NOT FOUND");
             }
             
             borrable = "";
