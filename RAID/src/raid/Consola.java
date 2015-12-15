@@ -5,6 +5,14 @@
  */
 package raid;
 
+import com.sun.glass.events.KeyEvent;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author Jose Alberto Pejuan
@@ -17,6 +25,15 @@ public class Consola extends javax.swing.JFrame {
     public Consola() {
         initComponents();
         jp_console.setText("\nShell>");
+        antesDeBorrable = jp_console.getText();
+        pastCommands = new ArrayList();
+        String host = "192.168.56.101";
+        int port = 1099;
+        try {
+            Registry registry = LocateRegistry.getRegistry(host, port);
+        } catch (Exception e) {
+
+        }
     }
 
     /**
@@ -84,27 +101,62 @@ public class Consola extends javax.swing.JFrame {
 
     private void jp_consoleKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jp_consoleKeyPressed
         // TODO add your handling code here:
-        
-        if (evt.getKeyCode() == 10) {//Enter
-            
+
+        if (evt.getKeyCode() == 17) {    // Esta presionado ctrl
+            ctrlPressed = true;
+        }
+
+        if (ctrlPressed && evt.getKeyCode() != KeyEvent.VK_D && evt.getKeyCode() != 17) { 
+            evt.consume();
+            ctrlPressed = false;// Se hace falso porque no es ctrl-d
+        }
+        if (escribiendoContenido) {  
+            if (evt.getKeyCode() == KeyEvent.VK_D && ctrlPressed) {
+                System.out.println("Nombre archivo:" + nombreArchivo);
+                System.out.println("Contenido:" + contenido);
+                contenido = "";
+                escribiendoContenido = false;
+                jp_console.setText(jp_console.getText()+"\nShell>");
+            } else {
+                contenido += evt.getKeyChar();
+            }
+
+        } else if (evt.getKeyCode() == 10) {//Enter
+
             evt.consume();
             borrable.toLowerCase();
             if (borrable.startsWith("clear")) {
                 jp_console.setText("");
-            }else if(borrable.startsWith("rmdir")){
-                jp_console.setText(jp_console.getText()+"\nSe ejecuto rmdir");
-            }else if(borrable.startsWith("rm")){
-                 jp_console.setText(jp_console.getText()+"\nSe ejecuto rm");
-            }else if(borrable.startsWith("ls")){
-                 jp_console.setText(jp_console.getText()+"\nSe ejecuto ls");
+            } else if (borrable.startsWith("rmdir")) {
+                jp_console.setText(jp_console.getText() + "\nSe ejecuto rmdir");
+            } else if (borrable.startsWith("rm")) {
+                jp_console.setText(jp_console.getText() + "\nSe ejecuto rm");
+            } else if (borrable.startsWith("ls")) {
+                jp_console.setText(jp_console.getText() + "\nSe ejecuto ls");
+            } else if (borrable.startsWith("cat > ")) {
+                borrable = borrable.replace("cat > ", "");
+                contenido = "";
+                nombreArchivo = borrable;
+                escribiendoContenido = true;
+                jp_console.setText(jp_console.getText() + "\n");
+            } else {
+                jp_console.setText(jp_console.getText() + "\nCOMMAND NOT FOUND");
+            }
+
+            borrable = "";
+            if (escribiendoContenido) {
+                
             }else{
-                 jp_console.setText(jp_console.getText()+"\nCOMMAND NOT FOUND");
+                jp_console.setText(jp_console.getText() + "\nShell>");
             }
             
-            borrable = "";
-            jp_console.setText(jp_console.getText()+"\nShell>");
-        }else {
-            if (!((evt.isActionKey() || (evt.getKeyCode() == 16) || (evt.getKeyCode() == 8) || (evt.getKeyCode() == 17))) && !(evt.isAltDown() || evt.isControlDown())) {
+        } else {
+            final int key = evt.getKeyCode();
+
+            if (key == KeyEvent.VK_UP || key == KeyEvent.VK_DOWN || key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_LEFT) {
+
+                evt.consume();
+            } else if (!((evt.isActionKey() || (evt.getKeyCode() == 16) || (evt.getKeyCode() == 8) || (evt.getKeyCode() == 17))) && !(evt.isAltDown() || evt.isControlDown())) {
                 if (borrable.length() >= 0) {
                     borrable += evt.getKeyChar();
                 }
@@ -119,7 +171,7 @@ public class Consola extends javax.swing.JFrame {
             }
             System.out.println(borrable);
         }
-        
+
     }//GEN-LAST:event_jp_consoleKeyPressed
 
     /**
@@ -165,4 +217,10 @@ public class Consola extends javax.swing.JFrame {
     private javax.swing.JTextPane jp_console;
     // End of variables declaration//GEN-END:variables
     String borrable = "";
+    String antesDeBorrable = "\nShell>";
+    ArrayList<String> pastCommands;
+    boolean escribiendoContenido = false;
+    boolean ctrlPressed = false;
+    String nombreArchivo = "";
+    String contenido = "";
 }
