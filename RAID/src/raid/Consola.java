@@ -7,6 +7,7 @@ package raid;
 
 import com.sun.glass.events.KeyEvent;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -27,10 +28,13 @@ public class Consola extends javax.swing.JFrame {
         jp_console.setText("\nShell>");
         antesDeBorrable = jp_console.getText();
         pastCommands = new ArrayList();
-        String host = "192.168.56.101";
-        int port = 1099;
+        host = "192.168.56.101";
+        port = 1099;
         try {
-            Registry registry = LocateRegistry.getRegistry(host, port);
+            registry = LocateRegistry.getRegistry(host, port);
+            stub = (ServerNode) registry.lookup("ServerNode");
+
+            System.out.println("Conexión hecha.");
         } catch (Exception e) {
 
         }
@@ -106,17 +110,23 @@ public class Consola extends javax.swing.JFrame {
             ctrlPressed = true;
         }
 
-        if (ctrlPressed && evt.getKeyCode() != KeyEvent.VK_D && evt.getKeyCode() != 17) { 
+        if (ctrlPressed && evt.getKeyCode() != KeyEvent.VK_D && evt.getKeyCode() != 17) {
             evt.consume();
             ctrlPressed = false;// Se hace falso porque no es ctrl-d
         }
-        if (escribiendoContenido) {  
+        if (escribiendoContenido) {
             if (evt.getKeyCode() == KeyEvent.VK_D && ctrlPressed) {
                 System.out.println("Nombre archivo:" + nombreArchivo);
                 System.out.println("Contenido:" + contenido);
+                try {
+                    stub.saveFile(nombreArchivo, contenido);
+                } catch (RemoteException ex) {
+                    Logger.getLogger(Consola.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 contenido = "";
                 escribiendoContenido = false;
-                jp_console.setText(jp_console.getText()+"\nShell>");
+                jp_console.setText(jp_console.getText() + "\nShell>");
+
             } else {
                 contenido += evt.getKeyChar();
             }
@@ -124,14 +134,16 @@ public class Consola extends javax.swing.JFrame {
         } else if (evt.getKeyCode() == 10) {//Enter
 
             evt.consume();
+            String[] losSplits;
             borrable.toLowerCase();
             if (borrable.startsWith("clear")) {
                 jp_console.setText("");
-            } else if (borrable.startsWith("rmdir")) {
+            } else if (borrable.startsWith("rmdir ")) {
+                
                 jp_console.setText(jp_console.getText() + "\nSe ejecuto rmdir");
-            } else if (borrable.startsWith("rm")) {
+            } else if (borrable.startsWith("rm ")) {
                 jp_console.setText(jp_console.getText() + "\nSe ejecuto rm");
-            } else if (borrable.startsWith("ls")) {
+            } else if (borrable.equals("ls")) {
                 jp_console.setText(jp_console.getText() + "\nSe ejecuto ls");
             } else if (borrable.startsWith("cat > ")) {
                 borrable = borrable.replace("cat > ", "");
@@ -139,17 +151,31 @@ public class Consola extends javax.swing.JFrame {
                 nombreArchivo = borrable;
                 escribiendoContenido = true;
                 jp_console.setText(jp_console.getText() + "\n");
+            } else if (borrable.startsWith("cat> ")) {
+                borrable = borrable.replace("cat> ", "");
+                contenido = "";
+                nombreArchivo = borrable;
+                escribiendoContenido = true;
+                jp_console.setText(jp_console.getText() + "\n");
+
+            } else if (borrable.startsWith("mkdir ")) {
+                losSplits = borrable.split(" ");
+                try {
+                    stub.createFolder(losSplits[1]);
+                } catch (RemoteException ex) {
+                    Logger.getLogger(Consola.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } else {
                 jp_console.setText(jp_console.getText() + "\nCOMMAND NOT FOUND");
             }
 
             borrable = "";
             if (escribiendoContenido) {
-                
-            }else{
+
+            } else {
                 jp_console.setText(jp_console.getText() + "\nShell>");
             }
-            
+
         } else {
             final int key = evt.getKeyCode();
 
@@ -223,4 +249,8 @@ public class Consola extends javax.swing.JFrame {
     boolean ctrlPressed = false;
     String nombreArchivo = "";
     String contenido = "";
+    String host;
+    int port;
+    Registry registry;
+    ServerNode stub;
 }
